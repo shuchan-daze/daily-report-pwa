@@ -1,17 +1,212 @@
-# daily-report-pwa
-ローカルで動作する日報、自動作成アプリ
-MIT License
+# 日報照合 PWA テスト版
 
-Copyright (c) 2026 しゅうちゃん
+これは、iPhone標準のテキスト認識/OCRでコピーした文字を貼り付けて、日報とレシート明細を照合するためのローカルPWAテスト版です。
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+画像をサーバーにアップロードしてOCRする方式ではありません。画像や売上データは外部サーバーへ送信せず、ブラウザ内で処理します。
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+## 目的
+
+タクシー・ハイヤー業務の日報とレシート明細を、完全自動OCRではなく「半自動」で照合するための試作品です。
+
+現在の方針は以下です。
+
+- 日報を正本として扱う
+- レシート明細は照合材料として使う
+- 貸切、障害者割引、メーター外売上など、レシートに出ない売上を許容する
+- レシートにない数字は水色で表示する
+- 差額がある数字は薄赤で表示する
+- 合計行やOCRノイズをなるべく売上として扱わない
+
+---
+
+## ファイル構成
+
+```text
+index.html
+app.js
+styles.css
+manifest.webmanifest
+sw.js
+icon-192.png
+icon-512.png
+README.md
+```
+
+---
+
+## まずローカルで試す方法
+
+ZIPを解凍して、`index.html` をブラウザで開いてください。
+
+ただし、PWAのホーム画面追加やService Workerの動作は、通常のローカルファイルでは制限される場合があります。
+本番に近い形で使うなら、GitHub Pagesに置くのが簡単です。
+
+---
+
+## GitHub Pagesに置く方法
+
+### 1. GitHubで新規リポジトリを作る
+
+例：
+
+```text
+daily-report-pwa
+```
+
+無料でGitHub Pagesを使う場合は、基本的には公開リポジトリにしてください。
+
+### 2. ファイルをアップロードする
+
+リポジトリ画面で以下を押します。
+
+```text
+Add file → Upload files
+```
+
+このフォルダ内のファイルをすべてアップロードします。
+
+```text
+index.html
+app.js
+styles.css
+manifest.webmanifest
+sw.js
+icon-192.png
+icon-512.png
+README.md
+```
+
+アップロード後、`Commit changes` を押します。
+
+### 3. GitHub Pagesを有効にする
+
+リポジトリの画面で以下に進みます。
+
+```text
+Settings → Pages
+```
+
+設定は以下です。
+
+```text
+Source: Deploy from a branch
+Branch: main
+Folder: /root
+```
+
+保存すると、しばらくしてURLが表示されます。
+
+例：
+
+```text
+https://あなたのGitHubユーザー名.github.io/daily-report-pwa/
+```
+
+---
+
+## iPhoneでアプリっぽく使う方法
+
+1. iPhoneのSafariでGitHub PagesのURLを開く
+2. 共有ボタンを押す
+3. `ホーム画面に追加` を押す
+4. ホーム画面のアイコンから起動する
+
+これで普通のアプリのように起動できます。
+
+---
+
+## 実際の使い方
+
+### 日報側
+
+1. iPhoneの写真アプリで日報画像を開く
+2. iPhone標準のテキスト認識で文字・数字を選択する
+3. コピーする
+4. PWAの `日報OCRテキスト` に貼り付ける
+
+### レシート側
+
+1. 写真アプリでレシート画像を開く
+2. iPhone標準のテキスト認識で明細部分の文字をコピーする
+3. PWAの `レシートOCRテキスト` に貼り付ける
+
+### 照合
+
+`解析する` を押すと、日報金額をベースに照合表を作ります。
+
+---
+
+## 色の意味
+
+| 表示 | 意味 |
+|---|---|
+| 通常表示 | 日報金額とレシート金額が一致 |
+| 水色 | 日報にはあるが、レシート側に一致がない |
+| 薄赤 | 金額差がある |
+
+水色は、必ずしも間違いではありません。
+貸切、障害者割引、メーター外売上、OCR漏れなどの可能性があります。
+
+---
+
+## 保存について
+
+`この結果を保存` を押すと、入力内容をブラウザのローカル保存領域に保存します。
+
+保存先は端末内のブラウザ保存領域です。
+外部サーバーには送信しません。
+
+ただし、以下の場合は保存データが消えることがあります。
+
+- Safariの履歴・Webサイトデータを削除した
+- プライベートブラウズで使った
+- ブラウザ側が容量整理した
+
+---
+
+## 現在の制限
+
+このテスト版では、WebアプリからiPhoneのApple Vision OCRを直接呼び出していません。
+
+そのため、画像をアップロードして自動でOCRするのではなく、以下の運用です。
+
+```text
+iPhone写真アプリでOCRコピー
+↓
+PWAに貼り付け
+↓
+PWAが数字抽出・照合・集計
+```
+
+この方式にしている理由は、無料・ローカル完結・App Store不要・Apple Developer登録不要で運用するためです。
+
+---
+
+## 今後追加したい機能候補
+
+- 日報の行数を手動指定する機能
+- 金額候補をタップして採用・除外する機能
+- 障害者割引などの2段数字を同一行として扱う補助機能
+- 貸切・未収・現金などの区分入力
+- 月締め、15日締めの集計
+- CSV出力
+- Excel貼り付け用コピー
+- 日別保存リスト
+- 読み取り候補の修正画面
+
+---
+
+## 開発方針
+
+完全自動OCRを狙いすぎると、手書き・割引・貸切・メーター外売上で破綻しやすくなります。
+
+この版では、以下を優先します。
+
+```text
+完全自動より、現場で間違えにくい半自動
+高度なAIより、確認しやすい表
+画像アップロードより、端末内完結
+```
+
